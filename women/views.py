@@ -1,8 +1,9 @@
 from django.http import HttpResponse, HttpResponseNotFound, Http404, HttpResponseRedirect, HttpResponsePermanentRedirect
-from django.shortcuts import render,redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.template.loader import render_to_string
 from django.template.defaultfilters import slugify
+from women.models import Women, Category
 
 menu = [
     {'title': "О сайте", 'url_name': 'about'},
@@ -30,24 +31,25 @@ data_db = [
 ]
 
 
-cats_db = [
-    {'id': 1, 'name': 'Актрисы'},
-    {'id': 2, 'name': 'Певицы'},
-    {'id': 3, 'name': 'Спортсменки'},
-]
-
-
 def index(request): # HttpRequest (класс содержащий информацию о запросе)
+    posts = Women.published.all()
+
     data = {'title': 'Главная страница',
             'menu': menu,
-            'posts': data_db,
+            'posts': posts,
             'cat_selected': 0,
             }
     return render(request, 'women/index.html', context=data)
 
 
-def show_post(request, post_id):
-    return HttpResponse(f"Отображение статьи с id = {post_id}")
+def show_post(request, post_slug):
+    post = get_object_or_404(Women, slug=post_slug)
+    data = {'title': post.title,
+            'menu': menu,
+            'post': post,
+            'cat_selected': 1,
+            }
+    return render(request, 'women/post.html', data)
 
 
 def about(request):
@@ -66,11 +68,14 @@ def login(request):
     return HttpResponse('Авторизация')
 
 
-def show_category(request, cat_id):
-    data = {'title': 'Главная страница',
+def show_category(request, cat_slug):
+    category = get_object_or_404(Category, slug=cat_slug)
+    posts = Women.published.filter(cat_id=category.pk)
+    posts2 = Women.published.filter(cat__slug=cat_slug)
+    data = {'title': f'Рубрика: {category.name}',
             'menu': menu,
-            'posts': data_db,
-            'cat_selected': cat_id,
+            'posts': posts,
+            'cat_selected': category.pk,
             }
     return render(request, 'women/index.html', context=data)
 
